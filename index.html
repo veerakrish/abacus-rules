@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧮 ABACUS QUEST — Rule Master Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #07080f;
+  --bg2:    #0d1020;
+  --bg3:    #131629;
+  --panel:  #1a1f3a;
+  --panel2: #232844;
+  --border: #2d3560;
+  --text:   #e8eaf6;
+  --dim:    #7880a8;
+
+  --add:    #00ff88;
+  --add-d:  #00cc66;
+  --add-bg: rgba(0,255,136,0.08);
+  --sub:    #ff3366;
+  --sub-d:  #cc2244;
+  --sub-bg: rgba(255,51,102,0.08);
+  --mul:    #33aaff;
+  --mul-d:  #1177cc;
+  --mul-bg: rgba(51,170,255,0.08);
+  --div:    #ffcc00;
+  --div-d:  #cc9900;
+  --div-bg: rgba(255,204,0,0.08);
+
+  --gold:   #ffd700;
+  --silver: #c0c0c0;
+  --bronze: #cd7f32;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; min-height: 100vh; }
+
+body {
+  font-family: 'Exo 2', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(51,170,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(51,170,255,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 20% 20%, rgba(0,255,136,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 80%, rgba(255,51,102,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 50%, rgba(51,170,255,0.04) 0%, transparent 60%);
+}
+
+/* ── SCREENS ── */
+.screen { 
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: none; flex-direction: column; align-items: center;
+}
+.screen.active { display: flex; }
+
+/* ═══════════════════════ TITLE SCREEN ═══════════════════════ */
+#screen-title {
+  justify-content: center;
+  padding: 20px;
+  gap: 0;
+}
+
+.title-logo {
+  text-align: center;
+  animation: titleIn 1s cubic-bezier(.36,2,.6,.9) forwards;
+}
+@keyframes titleIn {
+  0%  { transform: scale(0.3) rotateY(90deg); opacity: 0; }
+  100%{ transform: scale(1)   rotateY(0deg);  opacity: 1; }
+}
+.logo-abacus { font-size: clamp(3rem,10vw,7rem); margin-bottom: 4px; display: block; }
+.logo-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(1.2rem, 4vw, 2.8rem);
+  color: var(--gold);
+  text-shadow: 0 0 20px var(--gold), 0 0 40px rgba(255,215,0,0.4);
+  letter-spacing: 4px;
+  display: block;
+  line-height: 1.4;
+}
+.logo-sub {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(.7rem, 2vw, 1rem);
+  color: var(--mul);
+  letter-spacing: 6px;
+  text-shadow: 0 0 10px var(--mul);
+  margin-top: 8px;
+  display: block;
+}
+
+.title-worlds {
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+  margin: 32px 0;
+}
+.world-btn {
+  width: 140px; padding: 16px 10px;
+  border-radius: 12px; border: 2px solid;
+  background: var(--panel);
+  cursor: pointer; transition: all .2s;
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+.world-btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: currentColor; opacity: 0; transition: opacity .2s;
+}
+.world-btn:hover::before { opacity: 0.08; }
+.world-btn:hover { transform: translateY(-4px) scale(1.04); }
+.world-btn:active { transform: scale(.97); }
+
+.wb-add { border-color: var(--add); color: var(--add); }
+.wb-sub { border-color: var(--sub); color: var(--sub); }
+.wb-mul { border-color: var(--mul); color: var(--mul); }
+.wb-div { border-color: var(--div); color: var(--div); }
+
+.wb-icon   { font-size: 2rem; display: block; margin-bottom: 6px; }
+.wb-name   { font-family: 'Press Start 2P', monospace; font-size: .6rem; letter-spacing: 1px; display: block; }
+.wb-levels { font-size: .75rem; color: var(--dim); margin-top: 4px; display: block; }
+.wb-stars  { font-size: .85rem; margin-top: 4px; display: block; min-height: 1.2em; }
+
+.title-footer {
+  font-family: 'Press Start 2P', monospace;
+  font-size: .55rem; color: var(--dim);
+  text-align: center; margin-top: 8px;
+  animation: blink 1.5s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ═══════════════════════ WORLD MAP ═══════════════════════ */
+#screen-world {
+  padding: 16px 12px;
+  gap: 12px;
+  min-height: 100vh;
+}
+.world-header {
+  display: flex; align-items: center; gap: 12px; width: 100%; max-width: 700px;
+}
+.back-btn {
+  background: var(--panel); border: 2px solid var(--border);
+  border-radius: 8px; padding: 8px 14px;
+  font-family: 'Press Start 2P', monospace; font-size: .55rem;
+  color: var(--text); cursor: pointer; transition: all .2s;
+}
+.back-btn:hover { border-color: var(--text); background: var(--panel2); }
+
+.world-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(.8rem, 2.5vw, 1.1rem);
+  text-shadow: 0 0 15px currentColor;
+  flex: 1;
+}
+
+.world-score-row {
+  font-family: 'Orbitron', sans-serif; font-size: .85rem;
+  color: var(--gold); text-shadow: 0 0 8px var(--gold);
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px; width: 100%; max-width: 700px;
+}
+
+.level-card {
+  background: var(--panel); border: 2px solid var(--border);
+  border-radius: 14px; padding: 16px 14px;
+  cursor: pointer; transition: all .22s;
+  position: relative; overflow: hidden;
+}
+.level-card:hover { transform: translateY(-4px); border-color: currentColor; }
+.level-card::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: currentColor; transform: scaleX(0); transition: transform .2s;
+}
+.level-card:hover::after { transform: scaleX(1); }
+.level-card.locked { opacity: .45; cursor: not-allowed; }
+.level-card.locked:hover { transform: none; }
+
+.lc-rule  { font-family: 'Press Start 2P', monospace; font-size: 1rem; margin-bottom: 8px; }
+.lc-name  { font-size: .9rem; font-weight: 700; margin-bottom: 4px; }
+.lc-tag   { font-size: .75rem; color: var(--dim); font-style: italic; margin-bottom: 8px; line-height: 1.4; }
+.lc-stars { font-size: 1rem; }
+.lc-lock  { font-size: 1.2rem; position: absolute; top: 12px; right: 12px; }
+
+/* BOSS CARD */
+.level-card.boss {
+  background: linear-gradient(135deg, var(--bg3), var(--panel2));
+  border-style: dashed;
+  grid-column: 1 / -1;
+}
+
+/* ═══════════════════════ GAME SCREEN ═══════════════════════ */
+#screen-game {
+  padding: 10px 12px;
+  gap: 10px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.game-topbar {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+}
+.game-rule-badge {
+  font-family: 'Press Start 2P', monospace; font-size: .6rem;
+  padding: 5px 10px; border-radius: 6px; border: 2px solid;
+  text-shadow: 0 0 8px currentColor; box-shadow: 0 0 8px currentColor;
+}
+.game-title-small {
+  flex: 1; font-family: 'Orbitron', sans-serif; font-size: .75rem;
+  color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lives-row { display: flex; gap: 4px; }
+.life { font-size: 1.1rem; transition: all .2s; }
+.life.lost { opacity: .2; transform: scale(.8); filter: grayscale(1); }
+.score-badge {
+  font-family: 'Orbitron', sans-serif; font-size: .9rem;
+  color: var(--gold); text-shadow: 0 0 8px var(--gold);
+}
+
+/* PROGRESS BAR */
+.progress-wrap { width: 100%; }
+.progress-track {
+  height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden;
+  border: 1px solid var(--border);
+}
+.progress-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, currentColor, color-mix(in srgb, currentColor 70%, white 30%));
+  transition: width .4s cubic-bezier(.36,2,.6,.9);
+  box-shadow: 0 0 8px currentColor;
+}
+.progress-label {
+  font-size: .7rem; color: var(--dim); text-align: right; margin-top: 2px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* RULE CARD */
+.rule-reminder {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 16px; width: 100%;
+}
+.rr-title {
+  font-family: 'Press Start 2P', monospace; font-size: .5rem;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--dim); margin-bottom: 6px;
+}
+.rr-text { font-size: .88rem; line-height: 1.5; }
+.rr-formula {
+  font-family: 'Orbitron', monospace; font-size: .78rem;
+  padding: 5px 10px; border-radius: 6px; background: var(--bg2);
+  margin-top: 6px; display: inline-block; color: var(--gold);
+}
+
+/* QUESTION CARD */
+.question-card {
+  background: var(--panel); border: 2px solid var(--border);
+  border-radius: 16px; padding: 18px 20px; width: 100%;
+  position: relative; overflow: hidden;
+}
+.qc-type {
+  font-family: 'Press Start 2P', monospace; font-size: .45rem;
+  color: var(--dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+}
+.qc-problem {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.1rem, 4vw, 1.8rem);
+  font-weight: 900; color: var(--text);
+  margin-bottom: 14px; line-height: 1.3;
+}
+.qc-problem .num { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+
+/* MULTIPLE CHOICE */
+.mc-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.mc-btn {
+  background: var(--bg2); border: 2px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  font-family: 'Exo 2', sans-serif; font-size: .92rem; font-weight: 700;
+  color: var(--text); cursor: pointer; transition: all .18s;
+  text-align: left; line-height: 1.35;
+}
+.mc-btn:hover:not(:disabled) { border-color: currentColor; background: rgba(255,255,255,0.04); }
+.mc-btn:active:not(:disabled) { transform: scale(.97); }
+.mc-btn.correct  { background: rgba(0,255,136,.15); border-color: var(--add); color: var(--add); }
+.mc-btn.wrong    { background: rgba(255,51,102,.15); border-color: var(--sub); color: var(--sub); }
+.mc-btn.reveal   { background: rgba(0,255,136,.08); border-color: var(--add); }
+.mc-btn:disabled { cursor: not-allowed; }
+
+/* HAND COUNT */
+.hand-display {
+  display: flex; gap: 16px; align-items: flex-end;
+  justify-content: center; margin: 10px 0;
+}
+.hand-svg-wrap { position: relative; }
+.finger-row {
+  display: flex; gap: 6px; justify-content: center;
+  flex-wrap: wrap; margin: 8px 0;
+}
+.finger {
+  width: 32px; height: 50px; border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(180deg, #f4b87e, #d4834a);
+  border: 2px solid #a0522d;
+  transition: all .3s cubic-bezier(.36,2,.6,.9);
+  cursor: pointer;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 4px; font-size: .7rem;
+}
+.finger.closed {
+  height: 24px; border-radius: 6px;
+  background: linear-gradient(180deg, #a0522d, #7a3f20);
+  transform: translateY(26px);
+}
+.finger-count {
+  font-family: 'Orbitron', monospace; font-size: 1.6rem; font-weight: 900;
+  color: var(--gold); text-shadow: 0 0 12px var(--gold); text-align: center;
+}
+.hand-instruction {
+  font-size: .85rem; color: var(--dim); text-align: center; margin-top: 4px;
+}
+
+.count-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+.count-btn {
+  width: 50px; height: 50px; border-radius: 10px;
+  border: 2px solid var(--border); background: var(--bg2);
+  font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: 900;
+  color: var(--text); cursor: pointer; transition: all .18s;
+}
+.count-btn:hover { border-color: var(--gold); color: var(--gold); transform: scale(1.08); }
+.count-btn.correct { background: rgba(0,255,136,.2); border-color: var(--add); color: var(--add); }
+.count-btn.wrong   { background: rgba(255,51,102,.2); border-color: var(--sub); color: var(--sub); }
+
+/* SPEED INPUT */
+.speed-wrap { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+.speed-input {
+  background: var(--bg2); border: 3px solid var(--border);
+  border-radius: 12px; padding: 12px 20px;
+  font-family: 'Orbitron', monospace; font-size: 1.8rem; font-weight: 900;
+  color: var(--gold); text-align: center; outline: none;
+  width: 150px; text-shadow: 0 0 10px var(--gold);
+}
+.speed-input:focus { border-color: var(--gold); box-shadow: 0 0 16px rgba(255,215,0,.3); }
+.speed-submit {
+  padding: 12px 24px; border-radius: 12px;
+  background: var(--gold); color: var(--bg); border: none;
+  font-family: 'Press Start 2P', monospace; font-size: .65rem;
+  cursor: pointer; transition: all .18s;
+  box-shadow: 0 0 16px rgba(255,215,0,.4);
+}
+.speed-submit:hover { transform: scale(1.06); filter: brightness(1.1); }
+.speed-timer {
+  font-family: 'Orbitron', monospace; font-size: .9rem; color: var(--sub);
+  width: 100%; text-align: center; margin-top: 4px;
+}
+
+/* ABACUS COMPONENT */
+.abacus-wrap {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.abacus-val {
+  font-family: 'Orbitron', monospace; font-size: 1.4rem; font-weight: 900;
+  color: var(--gold); text-shadow: 0 0 12px var(--gold);
+  display: flex; align-items: center; gap: 10px;
+}
+.abacus-val .label { font-size: .7rem; color: var(--dim); font-weight: 400; }
+
+.game-abacus {
+  background: linear-gradient(135deg, #1a1200, #2a1e00);
+  border: 4px solid #8b6914;
+  border-radius: 14px; padding: 8px 10px;
+  box-shadow: 0 0 24px rgba(255,215,0,.2), inset 0 2px 4px rgba(255,255,255,.06);
+  display: flex; flex-direction: column; gap: 3px;
+  overflow-x: auto; max-width: 100%;
+}
+.ga-labels {
+  display: flex; gap: 3px; padding: 0 4px; margin-bottom: 2px;
+}
+.ga-lbl {
+  width: 34px; text-align: center;
+  font-family: 'Press Start 2P', monospace; font-size: .4rem;
+  color: #8b6914;
+}
+.lbl-spc { width: 18px; }
+.ga-heaven {
+  background: rgba(255,204,0,.08); border-radius: 8px 8px 0 0;
+  padding: 5px 4px 6px;
+  border-bottom: 4px solid #7c3aed;
+  display: flex; align-items: flex-end; gap: 3px;
+}
+.ga-earth {
+  background: rgba(51,170,255,.07); border-radius: 0 0 8px 8px;
+  padding: 5px 4px 4px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ga-earth-row { display: flex; gap: 3px; }
+.ga-sec-lbl {
+  font-family: 'Press Start 2P', monospace; font-size: .35rem;
+  writing-mode: vertical-lr; min-width: 16px; text-align: center;
+  align-self: center; padding: 2px;
+  border-radius: 4px;
+}
+.ga-sec-lbl.h { color: #d97706; background: rgba(251,191,36,.15); }
+.ga-sec-lbl.e { color: #3b82f6; background: rgba(147,197,253,.15); }
+.ga-rod { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 34px; }
+.ga-bead {
+  width: 28px; height: 15px; border-radius: 50%;
+  cursor: pointer; user-select: none;
+  transition: all .16s cubic-bezier(.36,2,.6,.9);
+  box-shadow: 0 2px 5px rgba(0,0,0,.4), inset 0 1px 2px rgba(255,255,255,.25);
+}
+.ga-bead:hover { transform: scale(1.14); z-index: 5; }
+.ga-bead:active { transform: scale(.93); }
+.ga-bead.hb     { background: linear-gradient(135deg,#fcd34d,#f59e0b,#d97706); }
+.ga-bead.eb     { background: linear-gradient(135deg,#93c5fd,#3b82f6,#1d4ed8); }
+.ga-bead.hb.on  { background: linear-gradient(135deg,#ff6666,#ff2222,#cc0000); box-shadow: 0 2px 10px rgba(255,51,51,.7); }
+.ga-bead.eb.on  { background: linear-gradient(135deg,#66ff99,#22cc55,#009933); box-shadow: 0 2px 10px rgba(34,204,85,.7); }
+.ga-bead.highlight { animation: beadPulse .6s ease infinite alternate; }
+@keyframes beadPulse { from{box-shadow:0 0 4px 1px gold} to{box-shadow:0 0 14px 5px orange} }
+
+.aba-check-btn {
+  padding: 11px 28px; border-radius: 12px; border: 2px solid;
+  font-family: 'Press Start 2P', monospace; font-size: .6rem;
+  cursor: pointer; transition: all .2s; letter-spacing: 1px;
+  margin-top: 8px;
+}
+.aba-check-btn:hover { transform: translateY(-2px); filter: brightness(1.15); }
+
+/* FEEDBACK OVERLAY */
+.feedback-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  pointer-events: none;
+  opacity: 0; transition: opacity .15s;
+}
+.feedback-overlay.show { opacity: 1; pointer-events: none; }
+.feedback-banner {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(1.5rem, 5vw, 3rem);
+  padding: 16px 40px; border-radius: 16px;
+  animation: bannerPop .4s cubic-bezier(.36,2,.6,.9);
+  text-align: center; line-height: 1.5;
+}
+@keyframes bannerPop { 0%{transform:scale(0.3)} 100%{transform:scale(1)} }
+.feedback-banner.correct {
+  background: rgba(0,255,136,.15); border: 3px solid var(--add); color: var(--add);
+  box-shadow: 0 0 40px rgba(0,255,136,.4);
+}
+.feedback-banner.wrong {
+  background: rgba(255,51,102,.15); border: 3px solid var(--sub); color: var(--sub);
+  box-shadow: 0 0 40px rgba(255,51,102,.4);
+}
+.feedback-hint {
+  margin-top: 10px; font-size: .8rem; font-family: 'Exo 2', sans-serif;
+  padding: 8px 20px; border-radius: 8px; background: var(--bg2);
+  color: var(--text); max-width: 380px; text-align: center; line-height: 1.5;
+  opacity: 0; animation: fadeUp .4s .2s ease forwards;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+.next-btn {
+  margin-top: 14px; padding: 12px 32px; border-radius: 12px; border: none;
+  background: var(--gold); color: var(--bg);
+  font-family: 'Press Start 2P', monospace; font-size: .65rem;
+  cursor: pointer; transition: all .2s;
+  box-shadow: 0 0 20px rgba(255,215,0,.5);
+  pointer-events: all;
+  opacity: 0; animation: fadeUp .3s .5s ease forwards;
+}
+.next-btn:hover { transform: scale(1.08); }
+
+/* LEVEL COMPLETE SCREEN */
+#screen-complete {
+  justify-content: center; align-items: center; gap: 16px;
+  padding: 24px;
+}
+.complete-stars { display: flex; gap: 6px; justify-content: center; }
+.complete-star {
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  animation: starPop .5s cubic-bezier(.36,2,.6,.9) forwards;
+  transform: scale(0);
+}
+.complete-star.lit   { filter: drop-shadow(0 0 12px var(--gold)); }
+.complete-star.unlit { filter: grayscale(1); opacity: .3; }
+@keyframes starPop { to { transform: scale(1); } }
+.complete-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(1rem, 3vw, 1.6rem); color: var(--gold);
+  text-shadow: 0 0 20px var(--gold); text-align: center;
+}
+.complete-score {
+  font-family: 'Orbitron', monospace; font-size: 1.4rem;
+  color: var(--text); text-align: center;
+}
+.complete-summary {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 20px;
+  max-width: 380px; width: 100%;
+}
+.cs-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.cs-row:last-child { border: none; }
+.cs-label { color: var(--dim); }
+.cs-val { font-weight: 700; }
+.complete-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.complete-btn {
+  padding: 12px 24px; border-radius: 12px; border: 2px solid;
+  font-family: 'Press Start 2P', monospace; font-size: .55rem;
+  cursor: pointer; transition: all .2s; letter-spacing: 1px;
+}
+.complete-btn:hover { transform: translateY(-3px); filter: brightness(1.15); }
+
+/* PARTICLES */
+.particle {
+  position: fixed; pointer-events: none; z-index: 200;
+  border-radius: 3px;
+  animation: particleFly linear forwards;
+}
+@keyframes particleFly {
+  0%  { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  100%{ transform: translate(var(--dx), var(--dy)) rotate(720deg); opacity: 0; }
+}
+
+/* COMBO BADGE */
+.combo-badge {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-family: 'Press Start 2P', monospace;
+  font-size: clamp(1.4rem, 5vw, 2.5rem); color: var(--gold);
+  text-shadow: 0 0 20px var(--gold);
+  pointer-events: none; z-index: 300;
+  animation: comboAnim .7s cubic-bezier(.36,2,.6,.9) forwards;
+}
+@keyframes comboAnim {
+  0%  { transform:translate(-50%,-50%) scale(0.3); opacity:1; }
+  60% { transform:translate(-50%,-50%) scale(1.2); opacity:1; }
+  100%{ transform:translate(-50%,-80%) scale(1);   opacity:0; }
+}
+
+/* DEMO SCREEN */
+#screen-demo {
+  padding: 16px; gap: 12px; justify-content: flex-start; max-width: 600px; margin: 0 auto;
+}
+.demo-step {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; width: 100%;
+  animation: stepSlide .4s ease;
+}
+@keyframes stepSlide { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+.demo-step-num {
+  font-family: 'Press Start 2P', monospace; font-size: .5rem; color: var(--dim);
+  margin-bottom: 6px;
+}
+.demo-step-text { font-size: .95rem; line-height: 1.55; }
+.demo-nav { display: flex; gap: 10px; justify-content: center; }
+.demo-nav-btn {
+  padding: 10px 22px; border-radius: 10px; border: 2px solid;
+  font-family: 'Press Start 2P', monospace; font-size: .55rem;
+  cursor: pointer; transition: all .18s;
+}
+.demo-nav-btn:hover { transform: translateY(-2px); }
+
+/* TOOLTIP */
+.tooltip {
+  position: fixed; background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; font-size: .78rem;
+  pointer-events: none; z-index: 500; max-width: 200px;
+  opacity: 0; transition: opacity .15s;
+}
+
+/* SCANLINE OVERLAY */
+.scanlines {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 3px);
+}
+
+/* RESPONSIVE */
+@media (max-width: 500px) {
+  .mc-grid { grid-template-columns: 1fr; }
+  .ga-bead { width: 22px; height: 12px; }
+  .ga-rod { width: 26px; }
+  .ga-lbl { width: 26px; }
+}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<!-- ══════════ TITLE ══════════ -->
+<div class="screen active" id="screen-title">
+  <div class="title-logo">
+    <span class="logo-abacus">🧮</span>
+    <span class="logo-title">ABACUS<br>QUEST</span>
+    <span class="logo-sub">RULE MASTER EDITION</span>
+  </div>
+
+  <div class="title-worlds" id="title-worlds">
+    <button class="world-btn wb-add" onclick="openWorld('add')">
+      <span class="wb-icon">➕</span>
+      <span class="wb-name">WORLD 1</span>
+      <span style="font-size:.65rem;font-weight:700;color:var(--add)">ADDITION</span>
+      <span class="wb-levels">5 Levels · Rules A1–A4</span>
+      <span class="wb-stars" id="stars-add"></span>
+    </button>
+    <button class="world-btn wb-sub" onclick="openWorld('sub')">
+      <span class="wb-icon">➖</span>
+      <span class="wb-name">WORLD 2</span>
+      <span style="font-size:.65rem;font-weight:700;color:var(--sub)">SUBTRACTION</span>
+      <span class="wb-levels">4 Levels · Rules S1–S4</span>
+      <span class="wb-stars" id="stars-sub"></span>
+    </button>
+    <button class="world-btn wb-mul" onclick="openWorld('mul')">
+      <span class="wb-icon">✖️</span>
+      <span class="wb-name">WORLD 3</span>
+      <span style="font-size:.65rem;font-weight:700;color:var(--mul)">MULTIPLY</span>
+      <span class="wb-levels">3 Levels · Rules M1–M3</span>
+      <span class="wb-stars" id="stars-mul"></span>
+    </button>
+    <button class="world-btn wb-div" onclick="openWorld('div')">
+      <span class="wb-icon">➗</span>
+      <span class="wb-name">WORLD 4</span>
+      <span style="font-size:.65rem;font-weight:700;color:var(--div)">DIVISION</span>
+      <span class="wb-levels">3 Levels · Rules D1–D3</span>
+      <span class="wb-stars" id="stars-div"></span>
+    </button>
+  </div>
+  <div class="title-footer">PRESS ANY WORLD TO START</div>
+</div>
+
+<!-- ══════════ WORLD MAP ══════════ -->
+<div class="screen" id="screen-world">
+  <div class="world-header">
+    <button class="back-btn" onclick="showTitle()">◀ BACK</button>
+    <div class="world-title" id="world-title">WORLD</div>
+    <div class="world-score-row" id="world-score">⭐ 0</div>
+  </div>
+  <div class="level-grid" id="level-grid"></div>
+</div>
+
+<!-- ══════════ DEMO ══════════ -->
+<div class="screen" id="screen-demo">
+  <div class="world-header">
+    <button class="back-btn" id="demo-back-btn">◀ BACK</button>
+    <div class="world-title" id="demo-rule-badge">RULE A1</div>
+    <button class="demo-nav-btn" id="demo-play-btn"
+      style="border-color:var(--gold);color:var(--gold);font-size:.5rem;padding:7px 14px"
+      onclick="startLevel()">▶ PLAY!</button>
+  </div>
+  <div id="demo-rule-text" class="rule-reminder" style="max-width:560px"></div>
+  <div id="demo-abacus-wrap"></div>
+  <div id="demo-steps-wrap" style="width:100%;max-width:560px"></div>
+  <div class="demo-nav">
+    <button class="demo-nav-btn" id="demo-prev" onclick="demoNav(-1)"
+      style="border-color:var(--dim);color:var(--dim)">◀ PREV</button>
+    <span id="demo-step-counter" style="font-family:'Orbitron',monospace;font-size:.85rem;color:var(--dim);align-self:center"></span>
+    <button class="demo-nav-btn" id="demo-next" onclick="demoNav(1)"
+      style="border-color:var(--mul);color:var(--mul)">NEXT ▶</button>
+  </div>
+</div>
+
+<!-- ══════════ GAME ══════════ -->
+<div class="screen" id="screen-game">
+  <div class="game-topbar">
+    <button class="back-btn" onclick="exitLevel()">✕</button>
+    <div class="game-rule-badge" id="game-rule-badge">A1</div>
+    <div class="game-title-small" id="game-title-small">Direct Earth Add</div>
+    <div class="lives-row" id="lives-row"></div>
+    <div class="score-badge" id="score-badge">0</div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="progress-label" id="progress-label">Q 1 / 5</div>
+  </div>
+
+  <div class="rule-reminder" id="rule-reminder">
+    <div class="rr-title">📋 CURRENT RULE</div>
+    <div class="rr-text" id="rr-text"></div>
+    <div class="rr-formula" id="rr-formula"></div>
+  </div>
+
+  <div class="question-card" id="question-card">
+    <div class="qc-type" id="qc-type"></div>
+    <div class="qc-problem" id="qc-problem"></div>
+    <div id="qc-content"></div>
+  </div>
+</div>
+
+<!-- ══════════ COMPLETE ══════════ -->
+<div class="screen" id="screen-complete">
+  <div class="complete-stars" id="complete-stars"></div>
+  <div class="complete-title" id="complete-title">LEVEL CLEAR!</div>
+  <div class="complete-score" id="complete-score"></div>
+  <div class="complete-summary" id="complete-summary"></div>
+  <div class="complete-btns" id="complete-btns"></div>
+</div>
+
+<!-- ══════════ FEEDBACK ══════════ -->
+<div class="feedback-overlay" id="feedback-overlay"></div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   GAME DATA
+═══════════════════════════════════════════ */
+const WORLDS = {
+  add: { name:'ADDITION', color:'var(--add)', colorVal:'#00ff88', icon:'➕', bg:'var(--add-bg)' },
+  sub: { name:'SUBTRACTION', color:'var(--sub)', colorVal:'#ff3366', icon:'➖', bg:'var(--sub-bg)' },
+  mul: { name:'MULTIPLY', color:'var(--mul)', colorVal:'#33aaff', icon:'✖️', bg:'var(--mul-bg)' },
+  div: { name:'DIVISION', color:'var(--div)', colorVal:'#ffcc00', icon:'➗', bg:'var(--div-bg)' }
+};
+
+const LEVELS = {
+  add:[
+    {id:'A1',name:'Direct Earth Add',tagline:'When there\'s room — just push up!',
+     rule:'Heaven NOT active · Enough free earth slots · Sum < 5 → Push N earth beads UP',
+     formula:'result = current + N  (direct push)',
+     steps:['Count how many earth beads are currently active (lit green)','Check if N more can fit — maximum 4 earth beads total','Push exactly N earth beads toward the centre bar — done!'],
+     questions:[
+       {type:'mc_rule',problem:'Current=2, Adding=2. Sum=4<5, heaven free. Which rule?',choices:['A1 — Direct Earth Push','A2a — Five\'s Hand','A3 — Heaven Active','A4 — Carry'],ans:0,hint:'Heaven free + room available + sum<5 → A1 direct push!'},
+       {type:'abacus',problem:'Set abacus to show: 0 + 3 = ?',cur:0,n:3,ans:3,hint:'Push 3 earth beads up — plenty of room!'},
+       {type:'mc_step',problem:'Current=2, Adding=1. What is the NEXT step on the abacus?',choices:['Push 1 earth bead toward bar','Activate heaven bead','Drop 1 earth bead','Carry to tens rod'],ans:0,hint:'A1 — just push 1 earth up toward the divider!'},
+       {type:'abacus',problem:'Set abacus to show: 1 + 3 = ?',cur:1,n:3,ans:4,hint:'1 already showing, push 3 more earth beads up'},
+       {type:'speed',problem:'3 + 1 = ?',ans:4,hint:'Easy A1! 3+1=4, direct push.'},
+     ]},
+    {id:'A2a',name:"Five's Hand Rule (N≤5)",tagline:"Not enough room? Trade through Heaven!",
+     rule:'Heaven NOT active · Insufficient earth slots · N≤5 · Sum<10 → Close N fingers, X=5−N, DROP X earth, ACTIVATE heaven',
+     formula:'Effect: −(5−N) + 5 = +N ✓',
+     steps:['Hold up ONE open hand (5 fingers = heaven\'s value of 5)','Close N fingers (the number you are adding) — count what remains','X = 5 − N (open fingers remaining)','DROP X earth beads DOWN (deactivate them — push away from bar)','Push heaven bead DOWN toward bar (activate it = +5)'],
+     questions:[
+       {type:'hand_count',problem:'Adding N=4. Close 4 fingers. How many remain open? (X = 5−N)',n:4,both:false,ans:1,hint:'5 − 4 = 1 finger stays open → drop 1 earth bead'},
+       {type:'abacus',problem:'Set abacus to show: 1 + 4 = ?',cur:1,n:4,ans:5,hint:'Close 4 fingers → X=1 → drop 1 earth → activate heaven = 5'},
+       {type:'mc_step',problem:'Current=2, Adding=3. X=5−3=2. Earth beads: what happens?',choices:['DROP 2 earth beads DOWN','Push 3 earth beads UP','Do nothing to earth','Push 1 earth up'],ans:0,hint:'X=2 means drop 2 earth. Then activate heaven.'},
+       {type:'abacus',problem:'Set abacus to show: 3 + 2 = ?',cur:3,n:2,ans:5,hint:'X=5−2=3. Drop all 3 earth → activate heaven = 5'},
+       {type:'hand_count',problem:'Adding N=1 (current=4). Close 1 finger. X=5−1=?',n:1,both:false,ans:4,hint:'5−1=4 fingers open → drop 4 earth → activate heaven'},
+     ]},
+    {id:'A2b',name:"Five's Hand Rule (N>5)",tagline:'Big add? Heaven first, then extra earth!',
+     rule:'Heaven NOT active · N>5 · Sum<10 → Activate heaven (+5) THEN push (N−5) earth UP',
+     formula:'+5 + (N−5) = +N ✓',
+     steps:['N is bigger than 5 — split it: N = 5 + (N−5)','ACTIVATE heaven bead (covers the 5 part = push DOWN toward bar)','Push (N − 5) extra earth beads UP toward bar (covers the remainder)'],
+     questions:[
+       {type:'mc_step',problem:'Current=0, Adding=7. FIRST step on the abacus?',choices:['Activate heaven bead first','Push 7 earth beads up','Drop 2 earth beads','Carry to tens'],ans:0,hint:'N=7>5 → activate heaven first, then deal with extra!'},
+       {type:'abacus',problem:'Set abacus to show: 0 + 6 = ?',cur:0,n:6,ans:6,hint:'6=5+1 → activate heaven, then push 1 earth up'},
+       {type:'mc_step',problem:'Current=0, Adding=8. After activating heaven, push how many earth up?',choices:['3','4','8','2'],ans:0,hint:'8−5=3 extra earth to push upward'},
+       {type:'abacus',problem:'Set abacus to show: 0 + 9 = ?',cur:0,n:9,ans:9,hint:'9=5+4 → activate heaven, push all 4 earth up'},
+       {type:'speed',problem:'1 + 8 = ?',ans:9,hint:'8=5+3 → activate heaven, push 3 more earth, total = 9'},
+     ]},
+    {id:'A3',name:'Heaven Active — Direct Earth',tagline:"Heaven's already up? Just add earth!",
+     rule:'Heaven IS active · N ≤ free earth slots · Sum ≤ 9 → Push N earth UP, heaven stays',
+     formula:'result = (5 + earth) + N  (heaven untouched)',
+     steps:['Heaven is already active (contributing 5) — count earth slots free: 4 − current_earth','If N ≤ free slots: just push N earth beads UP toward bar','Heaven bead stays exactly where it is — DO NOT touch it!'],
+     questions:[
+       {type:'mc_rule',problem:'Current=6 (heaven active + 1 earth). Adding=2. Heaven free slots=3. Rule?',choices:['A3 — Heaven active, add earth','A2a — Five\'s Hand','A4 — Carry','A1 — Direct Earth'],ans:0,hint:'Heaven is already active + room free → A3!'},
+       {type:'abacus',problem:'Set abacus to show: 5 + 3 = ?',cur:5,n:3,ans:8,hint:'Heaven active (+5), just push 3 earth up → 8'},
+       {type:'mc_step',problem:'Current=7 (heaven+2earth), Adding=2. Heaven bead: what happens?',choices:['Leave it alone — stays active','Deactivate heaven','Toggle heaven off then on','Move to next rod'],ans:0,hint:'A3 only touches earth. Heaven is UNTOUCHED!'},
+       {type:'abacus',problem:'Set abacus to show: 6 + 2 = ?',cur:6,n:2,ans:8,hint:'6=5+1. Push 2 more earth up → 5+1+2=8'},
+       {type:'speed',problem:'5 + 4 = ?',ans:9,hint:'Heaven active, push 4 earth up → 9'},
+     ]},
+    {id:'A4',name:"Both-Hands Carry Rule",tagline:'Overflow! Send a ten to the left!',
+     rule:'current + N ≥ 10 → Both hands (Y=10−N), CARRY +1 to left rod, remainder on current rod',
+     formula:'Y=10−N | remainder=current+N−10 | carry +1 left',
+     steps:['Hold up BOTH hands open (10 fingers = the carry)','Close N fingers → Y = 10 − N (remaining open fingers)','Push +1 to the LEFT (tens) rod using addition rules','On current rod: set beads to show remainder = current + N − 10'],
+     questions:[
+       {type:'hand_count',problem:'Both hands open. Adding N=7. Close 7 fingers. Y=10−N=?',n:7,both:true,ans:3,hint:'10−7=3 fingers remain open'},
+       {type:'mc_step',problem:'5+5=10. After carry to tens, ones rod should show:',choices:['0 — clear ones rod','5 — keep heaven','10 — show full','1 — just one bead'],ans:0,hint:'5+5−10=0. Clear the ones rod completely!'},
+       {type:'mc_step',problem:'7+5=12. Carry to tens done. Ones remainder = ?',choices:['2','7','5','12'],ans:0,hint:'7+5=12, 12−10=2. Ones rod shows 2.'},
+       {type:'speed',problem:'8 + 5 = ?',ans:13,hint:'8+5=13. Carry 1 to tens, ones shows 3.'},
+       {type:'speed',problem:'9 + 4 = ?',ans:13,hint:'9+4=13. Y=10−4=6. Carry 1, remainder=3.'},
+     ]},
+  ],
+  sub:[
+    {id:'S1',name:'Direct Earth Subtract',tagline:'Enough beads? Just pull them down!',
+     rule:'N ≤ active earth count → Pull N earth beads DOWN (away from bar)',
+     formula:'result = current − N  (direct pull)',
+     steps:['Count how many earth beads are currently active (lit green)','Confirm N is ≤ that count','Pull exactly N earth beads DOWN (away from divider bar)','Heaven bead stays — do NOT touch it'],
+     questions:[
+       {type:'mc_rule',problem:'Current=3 (3 earth active). Subtracting N=2. Rule?',choices:['S1 — Direct Pull','S2 — Five\'s Hand','S3 — Heaven+Earth','S4 — Borrow'],ans:0,hint:'3 earth active, N=2≤3 → direct pull S1!'},
+       {type:'abacus',problem:'Set abacus to show: 4 − 2 = ?',cur:4,n:2,ans:2,hint:'Pull 2 earth beads down away from the bar'},
+       {type:'mc_step',problem:'Current=9 (heaven+4earth). Subtracting=3. Heaven bead action?',choices:['Leave it alone','Deactivate heaven','S1 deactivates heaven','Move it'],ans:0,hint:'S1 only touches earth! Heaven stays active!'},
+       {type:'abacus',problem:'Set abacus to show: 4 − 4 = ?',cur:4,n:4,ans:0,hint:'Pull all 4 earth down → zero (heaven stays off)'},
+       {type:'speed',problem:'3 − 2 = ?',ans:1,hint:'Direct pull: 3−2=1'},
+     ]},
+    {id:'S2',name:"Five's Hand — Trade Back",tagline:"Can't subtract from earth? Give back heaven!",
+     rule:'Heaven IS active · N≤5 · not enough earth → Deactivate heaven, activate (5−N) earth',
+     formula:'Net: −5 + (5−N) = −N ✓',
+     steps:['Hold up ONE hand (5 fingers = heaven\'s stored value)','Close N fingers → X = 5 − N (remaining open)','DEACTIVATE heaven bead (push UP away from bar = −5)','ACTIVATE X earth beads (push UP toward bar = +(5−N))'],
+     questions:[
+       {type:'hand_count',problem:'Subtracting N=3. Close 3 fingers. How many earth to activate? (X=5−N)',n:3,both:false,ans:2,hint:'5−3=2 earth beads to push up after deactivating heaven'},
+       {type:'abacus',problem:'Set abacus to show: 5 − 3 = ?',cur:5,n:3,ans:2,hint:'Deactivate heaven, then activate 2 earth (5−3=2)'},
+       {type:'mc_step',problem:'Current=5, Subtracting=5. After deactivating heaven, activate how many earth?',choices:['0 — none','5 — all earth','1 — one earth','3 — three earth'],ans:0,hint:'X=5−5=0. Just deactivate heaven, nothing else!'},
+       {type:'abacus',problem:'Set abacus to show: 7 − 4 = ?',cur:7,n:4,ans:3,hint:'7=5+2. X=1. Deactivate heaven, push 1 more earth up → 3'},
+       {type:'speed',problem:'5 − 2 = ?',ans:3,hint:'Deactivate heaven, activate 3 earth (X=5−2=3) = 3'},
+     ]},
+    {id:'S3',name:'Heaven+Earth Combined Subtract',tagline:'N>5? Kill heaven AND strip earth!',
+     rule:'Heaven IS active · N>5 · (N−5)≤active earth → Deactivate heaven AND deactivate (N−5) earth',
+     formula:'Net: −5 − (N−5) = −N ✓',
+     steps:['N > 5 — split it: N = 5 + (N−5). Extra = N−5','DEACTIVATE heaven bead (covers the 5 portion)','DEACTIVATE (N−5) earth beads (covers the extra portion)'],
+     questions:[
+       {type:'mc_step',problem:'Current=9, Subtracting=7. N−5=2. What is the full action?',choices:['Deactivate heaven + deactivate 2 earth','Deactivate heaven only','Pull 7 earth down','Borrow from tens'],ans:0,hint:'7=5+2 → deactivate heaven + deactivate 2 earth!'},
+       {type:'abacus',problem:'Set abacus to show: 8 − 6 = ?',cur:8,n:6,ans:2,hint:'6=5+1. Deactivate heaven, deactivate 1 earth → 2'},
+       {type:'mc_step',problem:'Current=7, Subtracting=6. How many earth to deactivate?',choices:['1','2','6','0'],ans:0,hint:'6−5=1. Deactivate 1 earth after deactivating heaven'},
+       {type:'abacus',problem:'Set abacus to show: 9 − 8 = ?',cur:9,n:8,ans:1,hint:'8=5+3. Deactivate heaven + deactivate 3 earth → 1'},
+       {type:'speed',problem:'9 − 6 = ?',ans:3,hint:'6=5+1. Deactivate heaven+1 earth → 3'},
+     ]},
+    {id:'S4',name:'Both-Hands Borrow',tagline:"Can't subtract? Borrow ten from the left!",
+     rule:'N > current digit → Both hands (Y=10−N), BORROW −1 from left rod, ADD Y to current rod',
+     formula:'Y=10−N | borrow 1 from tens | add Y to ones',
+     steps:['BOTH hands open (10 fingers = the borrowed ten)','Close N fingers → Y = 10 − N (remaining)','Subtract 1 from the LEFT (tens) rod — borrow it!','Add Y to current rod using addition rules A1–A3'],
+     questions:[
+       {type:'hand_count',problem:'Both hands open. Subtracting N=7. Close 7. Y=10−N=?',n:7,both:true,ans:3,hint:'10−7=3. You\'ll add 3 to the current rod after borrowing'},
+       {type:'mc_step',problem:'12−7. Ones has 2. After borrowing from tens, add how many to ones?',choices:['3','7','2','10'],ans:0,hint:'Y=10−7=3. Ones gets +3 → 2+3=5 ✓'},
+       {type:'mc_rule',problem:'Current ones=3, Subtracting=8. Which rule? (8>3)',choices:['S4 — Borrow','S1 — Direct','S2 — Five\'s Hand','S3 — Heaven+Earth'],ans:0,hint:'8>3 → cannot subtract directly → must borrow → S4!'},
+       {type:'speed',problem:'11 − 7 = ?',ans:4,hint:'Y=3. Borrow from tens, add 3 to ones: 1+3=4'},
+       {type:'speed',problem:'14 − 8 = ?',ans:6,hint:'Y=2. Borrow from tens, add 2 to 4: 4+2=6'},
+     ]},
+  ],
+  mul:[
+    {id:'M1',name:'Repeated Addition',tagline:'A × B = Add A exactly B times!',
+     rule:'A × B = add A to abacus B times, folding one finger per round',
+     formula:'A × B = A + A + A ... (B times)',
+     steps:['Hold up B fingers (the multiplier)','Add A to the abacus using addition rules (A1–A4)','Fold ONE finger down — this counts the completed round','Repeat until ALL B fingers are folded down','Read the abacus — that is your answer!'],
+     questions:[
+       {type:'mc_step',problem:'3 × 4. How many times do you add 3 to the abacus?',choices:['4 times','3 times','7 times','12 times'],ans:0,hint:'Multiplier is 4 → add 3 exactly 4 times'},
+       {type:'mc_step',problem:'4×3 in progress: abacus=8, finger count=2. Next?',choices:['Add 4 more, fold 1 finger','Multiply by 2','Stop — done!','Add 3 instead'],ans:0,hint:'B=3, done 2 rounds, one left. Add 4 more!'},
+       {type:'speed',problem:'3 × 4 = ?',ans:12,hint:'0→3→6→9→12 (four additions)'},
+       {type:'speed',problem:'6 × 3 = ?',ans:18,hint:'0→6→12→18 (three additions)'},
+       {type:'speed',problem:'7 × 2 = ?',ans:14,hint:'0→7→14 (two additions)'},
+     ]},
+    {id:'M2',name:'Column-by-Column Multiply',tagline:'Multi-digit? Work each digit separately!',
+     rule:'AB × C: multiply tens digit A×C and ones digit B×C separately, then combine with carry',
+     formula:'AB×C = (A×C×10) + (B×C)',
+     steps:['Identify the TENS digit (A) and ONES digit (B)','Compute A × C using M1 → place result in TENS/HUNDREDS rod','Compute B × C using M1 → place result in ONES rod','Add partial products — apply carry rules (A4) if result ≥ 10'],
+     questions:[
+       {type:'mc_step',problem:'23 × 4. Tens partial (2×4) = ?',choices:['8','6','12','20'],ans:0,hint:'2×4=8 → placed in tens rod = 80 contribution'},
+       {type:'mc_step',problem:'23 × 4. Ones partial (3×4) = ?',choices:['12','8','9','6'],ans:0,hint:'3×4=12. Put 2 in ones, carry 1 to tens'},
+       {type:'speed',problem:'12 × 3 = ?',ans:36,hint:'Tens: 1×3=3. Ones: 2×3=6. Total: 36'},
+       {type:'speed',problem:'21 × 4 = ?',ans:84,hint:'Tens: 2×4=8. Ones: 1×4=4. Total: 84'},
+       {type:'speed',problem:'13 × 3 = ?',ans:39,hint:'Tens: 1×3=3. Ones: 3×3=9. Total: 39'},
+     ]},
+    {id:'M3',name:'× 5 Shortcut',tagline:'Times 5? Halve it and shift left!',
+     rule:'N × 5 = (N ÷ 2) on the LEFT rod, plus heaven if N is odd',
+     formula:'N×5 = (N÷2)×10 + (5 if N is odd)',
+     steps:['Halve N: if N even = exact half; if N odd = (N−1)÷2 with leftover','Place the halved value ONE rod to the LEFT (×10 shift)','If N was ODD: also activate heaven on the original rod (this adds the leftover 5)'],
+     questions:[
+       {type:'mc_step',problem:'6 × 5. Half of 6=3. Where does the 3 go on the abacus?',choices:['Tens rod (left shift)','Ones rod','Hundreds rod','Stays in ones'],ans:0,hint:'Half=3, shift left = tens rod. 3×10=30 ✓'},
+       {type:'mc_step',problem:'9 × 5. N is ODD! After placing 4 in tens, what else must you do?',choices:['Activate heaven on ones rod','Push 1 more earth in ones','Nothing extra needed','Add 9'],ans:0,hint:'N=9 odd → activate heaven in ones = +5 → 45 ✓'},
+       {type:'speed',problem:'6 × 5 = ?',ans:30,hint:'Half=3, in tens = 30'},
+       {type:'speed',problem:'7 × 5 = ?',ans:35,hint:'Half=3 in tens, odd so +5 in ones = 35'},
+       {type:'speed',problem:'8 × 5 = ?',ans:40,hint:'Half=4 in tens = 40'},
+     ]},
+  ],
+  div:[
+    {id:'D1',name:'Repeated Subtraction',tagline:'A÷B = Subtract B until zero, count times!',
+     rule:'A ÷ B: subtract B from A repeatedly. Count each subtraction = quotient',
+     formula:'Quotient = how many times you subtracted B',
+     steps:['Set A (dividend) on the abacus','Hold a tally (spare rod or finger count) at zero','Subtract B using subtraction rules (S1–S4), add 1 to tally','Repeat until abacus value < B (can\'t subtract anymore)','Tally = Quotient. Abacus remaining value = Remainder'],
+     questions:[
+       {type:'mc_step',problem:'12 ÷ 3. Start: abacus=12. Subtract 3 → abacus=9, count=1. Next?',choices:['Subtract 3 again, count=2','Stop — quotient is 1','Subtract 12','Add 3 back'],ans:0,hint:'Keep subtracting until abacus < 3!'},
+       {type:'mc_step',problem:'17 ÷ 5. After 3 subtractions abacus=2. What now?',choices:['Stop! quotient=3, remainder=2','Subtract 5 again (2 left)','Answer is 2','Start over'],ans:0,hint:'2 < 5 → can\'t subtract → done! Q=3, R=2'},
+       {type:'speed',problem:'15 ÷ 3 = ?',ans:5,hint:'15→12→9→6→3→0 (5 subtractions) = 5'},
+       {type:'speed',problem:'12 ÷ 4 = ?',ans:3,hint:'12→8→4→0 (3 subtractions) = 3'},
+       {type:'speed',problem:'20 ÷ 5 = ?',ans:4,hint:'20→15→10→5→0 (4 subtractions) = 4'},
+     ]},
+    {id:'D2',name:'÷ 5 Shortcut',tagline:'Divide by 5? Double it and shift right!',
+     rule:'A ÷ 5 = (A × 2) ÷ 10 = double A, read the tens digit',
+     formula:'A ÷ 5 = (A × 2) ÷ 10',
+     steps:['Double A by adding A to itself on the abacus','Read the TENS digit of the result — that IS your quotient','(The ones digit, if any, relates to the remainder scaled up)'],
+     questions:[
+       {type:'mc_step',problem:'30 ÷ 5. Double 30=60. The answer is?',choices:['6 (read tens digit)','3 (half of 6)','60','12'],ans:0,hint:'60 ÷ 10 = 6. Read the tens digit!'},
+       {type:'mc_step',problem:'40 ÷ 5. Double 40=80. Quotient?',choices:['8','4','80','40'],ans:0,hint:'80 → tens digit = 8'},
+       {type:'speed',problem:'35 ÷ 5 = ?',ans:7,hint:'35×2=70 → tens digit = 7'},
+       {type:'speed',problem:'45 ÷ 5 = ?',ans:9,hint:'45×2=90 → tens digit = 9'},
+       {type:'speed',problem:'25 ÷ 5 = ?',ans:5,hint:'25×2=50 → tens digit = 5'},
+     ]},
+    {id:'D3',name:'Long Division',tagline:'Big numbers? Estimate → Multiply → Subtract → Repeat!',
+     rule:'AB ÷ C: estimate quotient digit, multiply estimate×C, subtract, bring down next digit',
+     formula:'Estimate → ×C → subtract → next digit',
+     steps:['Look at leading digits — estimate: how many times does C fit?','Multiply estimate × C (using M1), place in same column as dividend segment','Subtract the product from the dividend (using S1–S4)','If remainder ≥ divisor, your estimate was too small — add 1 and retry','Bring down the next digit and repeat until all digits processed'],
+     questions:[
+       {type:'mc_step',problem:'84 ÷ 4. Tens digit: 8÷4=? (quotient tens digit)',choices:['2','4','3','8'],ans:0,hint:'8÷4=2 → tens quotient digit is 2'},
+       {type:'mc_step',problem:'84÷4: tens=2, 2×4=8, 8−8=0. Bring down 4. 4÷4=?',choices:['1','4','2','0'],ans:0,hint:'4÷4=1 → ones quotient digit is 1 → answer=21'},
+       {type:'speed',problem:'84 ÷ 4 = ?',ans:21,hint:'Tens: 8÷4=2. Ones: 4÷4=1. Answer: 21'},
+       {type:'speed',problem:'63 ÷ 3 = ?',ans:21,hint:'Tens: 6÷3=2. Ones: 3÷3=1. Answer: 21'},
+       {type:'speed',problem:'96 ÷ 4 = ?',ans:24,hint:'Tens: 9÷4=2 r1. Bring: 16÷4=4. Answer: 24'},
+     ]},
+  ]
+};
+
+/* ═══════════════════════════════════════════
+   SAVE DATA
+═══════════════════════════════════════════ */
+let saveData = { stars:{}, scores:{} };
+function save() { try { localStorage.setItem('aqSave', JSON.stringify(saveData)); } catch{} }
+function load() { try { const d=localStorage.getItem('aqSave'); if(d) saveData=JSON.parse(d); } catch{} }
+load();
+function getStars(world,lvl) { return (saveData.stars[world+lvl]||0); }
+function setStars(world,lvl,s) { saveData.stars[world+lvl]=Math.max(s,saveData.stars[world+lvl]||0); save(); }
+function worldTotalStars(world) { return LEVELS[world].reduce((t,l)=>t+getStars(world,l.id),0); }
+
+/* ═══════════════════════════════════════════
+   AUDIO
+═══════════════════════════════════════════ */
+let AC=null, bgTimer=null, bgTime=0, sfxOn=true;
+const BG_NOTES=[523,659,784,659,523,392,440,523,659,784,880,784,659,523,440,392];
+function initAudio(){
+  if(AC)return;
+  AC=new(window.AudioContext||window.webkitAudioContext)();
+  bgTime=AC.currentTime;
+  scheduleBG();
+  bgTimer=setInterval(scheduleBG,BG_NOTES.length*300);
+}
+function scheduleBG(){
+  if(!sfxOn||!AC)return;
+  BG_NOTES.forEach((f,i)=>{
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.connect(g);g.connect(AC.destination);
+    o.frequency.value=f;o.type='triangle';
+    const t=bgTime+i*.30;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(.04,t+.04);
+    g.gain.linearRampToValueAtTime(0,t+.27);
+    o.start(t);o.stop(t+.30);
+  });
+  bgTime+=BG_NOTES.length*.30;
+}
+function sfx(f=440,t='sine',d=.14,v=.15){
+  if(!sfxOn||!AC)return;
+  const o=AC.createOscillator(),g=AC.createGain();
+  o.connect(g);g.connect(AC.destination);
+  o.frequency.value=f;o.type=t;
+  g.gain.setValueAtTime(v,AC.currentTime);
+  g.gain.linearRampToValueAtTime(0,AC.currentTime+d);
+  o.start();o.stop(AC.currentTime+d);
+}
+function sfxClick(){sfx(900,'sine',.05,.12);}
+function sfxCorrect(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>sfx(f,'triangle',.18,.13),i*75));}
+function sfxWrong(){sfx(160,'sawtooth',.3,.18);}
+function sfxCombo(){sfx(1200,'sine',.12,.15);}
+document.body.addEventListener('click',()=>{if(!AC)initAudio();},{once:true});
+
+/* ═══════════════════════════════════════════
+   SCREEN MANAGEMENT
+═══════════════════════════════════════════ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+/* ═══════════════════════════════════════════
+   TITLE SCREEN
+═══════════════════════════════════════════ */
+function refreshTitle(){
+  ['add','sub','mul','div'].forEach(w=>{
+    const stars=worldTotalStars(w);
+    const max=LEVELS[w].length*3;
+    const el=document.getElementById('stars-'+w);
+    if(el) el.textContent=stars>0?('⭐'.repeat(Math.min(stars,5))+'  '+stars+'/'+max):'';
+  });
+}
+
+/* ═══════════════════════════════════════════
+   WORLD MAP
+═══════════════════════════════════════════ */
+let currentWorld='add';
+function openWorld(world){
+  currentWorld=world;
+  const W=WORLDS[world];
+  const grid=document.getElementById('level-grid');
+  const title=document.getElementById('world-title');
+  title.textContent=W.icon+' WORLD — '+W.name;
+  title.style.color=W.color;
+  document.getElementById('world-score').textContent='⭐ '+worldTotalStars(world)+' / '+(LEVELS[world].length*3);
+
+  grid.innerHTML='';
+  LEVELS[world].forEach((lvl,i)=>{
+    const stars=getStars(world,lvl.id);
+    const unlocked=i===0||(getStars(world,LEVELS[world][i-1].id)>=1);
+    const card=document.createElement('div');
+    card.className='level-card'+(unlocked?'':' locked');
+    card.style.color=W.color;
+    card.style.setProperty('--c',W.colorVal);
+    card.innerHTML=`
+      <div class="lc-rule" style="color:${W.colorVal}">RULE ${lvl.id}</div>
+      <div class="lc-name">${lvl.name}</div>
+      <div class="lc-tag">${lvl.tagline}</div>
+      <div class="lc-stars">${renderStars(stars,3)}</div>
+      ${!unlocked?'<div class="lc-lock">🔒</div>':''}
+    `;
+    if(unlocked) card.onclick=()=>openDemo(world,i);
+    grid.appendChild(card);
+  });
+  showScreen('world');
+}
+
+function renderStars(earned,max){
+  return Array.from({length:max},(_,i)=>i<earned?'⭐':'☆').join('');
+}
+function showTitle(){refreshTitle();showScreen('title');}
+
+/* ═══════════════════════════════════════════
+   DEMO / INTRO
+═══════════════════════════════════════════ */
+let demoWorld='', demoLvlIdx=0, demoStepIdx=0;
+
+function openDemo(world,idx){
+  demoWorld=world; demoLvlIdx=idx; demoStepIdx=0;
+  const lvl=LEVELS[world][idx];
+  const W=WORLDS[world];
+
+  document.getElementById('demo-rule-badge').textContent='RULE '+lvl.id+' — '+lvl.name;
+  document.getElementById('demo-rule-badge').style.color=W.colorVal;
+  document.getElementById('demo-back-btn').onclick=()=>openWorld(world);
+  document.getElementById('demo-play-btn').style.borderColor=W.colorVal;
+  document.getElementById('demo-play-btn').style.color=W.colorVal;
+
+  // Rule text
+  document.getElementById('demo-rule-text').innerHTML=`
+    <div class="rr-title">📋 RULE ${lvl.id}</div>
+    <div class="rr-text">${lvl.rule}</div>
+    <div class="rr-formula">${lvl.formula}</div>
+  `;
+
+  renderDemoStep();
+  showScreen('demo');
+  sfxClick();
+}
+
+function renderDemoStep(){
+  const lvl=LEVELS[demoWorld][demoLvlIdx];
+  const steps=lvl.steps;
+  const wrap=document.getElementById('demo-steps-wrap');
+  wrap.innerHTML='';
+  steps.forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='demo-step';
+    d.style.opacity=(i===demoStepIdx)?'1':'0.35';
+    d.style.borderColor=(i===demoStepIdx)?WORLDS[demoWorld].colorVal:'var(--border)';
+    d.innerHTML=`<div class="demo-step-num">STEP ${i+1} of ${steps.length}</div><div class="demo-step-text">${s}</div>`;
+    wrap.appendChild(d);
+  });
+  document.getElementById('demo-step-counter').textContent=(demoStepIdx+1)+' / '+steps.length;
+  document.getElementById('demo-prev').style.opacity=demoStepIdx===0?'0.3':'1';
+  document.getElementById('demo-next').textContent=demoStepIdx>=steps.length-1?'PLAY ▶':'NEXT ▶';
+  document.getElementById('demo-next').style.borderColor=demoStepIdx>=steps.length-1?'var(--gold)':'var(--mul)';
+  document.getElementById('demo-next').style.color=demoStepIdx>=steps.length-1?'var(--gold)':'var(--mul)';
+}
+
+function demoNav(dir){
+  const lvl=LEVELS[demoWorld][demoLvlIdx];
+  if(dir>0&&demoStepIdx>=lvl.steps.length-1){ startLevel(); return; }
+  demoStepIdx=Math.max(0,Math.min(demoStepIdx+dir,lvl.steps.length-1));
+  renderDemoStep(); sfxClick();
+}
+
+/* ═══════════════════════════════════════════
+   GAME STATE
+═══════════════════════════════════════════ */
+let gWorld='', gLvlIdx=0, gQIdx=0, gLives=3, gScore=0, gCorrect=0, gCombo=0, gAnswered=false;
+let gBeads=[]; // abacus state
+const RODS=5; // we show 5 rods for the mini-abacus: 10K, 1K, 100, 10, 1
+
+function initGBeads(){
+  gBeads=Array.from({length:RODS},()=>({h:false,e:[false,false,false,false]}));
+}
+function rodVal(r){ return((gBeads[r].h?5:0)+gBeads[r].e.filter(Boolean).length)*Math.pow(10,RODS-1-r); }
+function totalGVal(){ return gBeads.reduce((s,_,r)=>s+rodVal(r),0); }
+function setGNum(n){
+  initGBeads();
+  const s=Math.abs(Math.floor(n)).toString().padStart(RODS,'0');
+  for(let r=0;r<RODS;r++){
+    const d=parseInt(s[r])||0;
+    gBeads[r].h=d>=5;
+    const ec=d>=5?d-5:d;
+    for(let e=0;e<ec;e++) gBeads[r].e[e]=true;
+  }
+}
+
+function startLevel(){
+  gWorld=demoWorld; gLvlIdx=demoLvlIdx;
+  gQIdx=0; gLives=3; gScore=0; gCorrect=0; gCombo=0; gAnswered=false;
+  initGBeads();
+  const lvl=LEVELS[gWorld][gLvlIdx];
+  const W=WORLDS[gWorld];
+  document.getElementById('game-rule-badge').textContent='RULE '+lvl.id;
+  document.getElementById('game-rule-badge').style.color=W.colorVal;
+  document.getElementById('game-rule-badge').style.borderColor=W.colorVal;
+  document.getElementById('game-title-small').textContent=lvl.name;
+  document.getElementById('rr-text').textContent=lvl.rule;
+  document.getElementById('rr-formula').textContent=lvl.formula;
+  document.getElementById('progress-fill').style.color=W.colorVal;
+  renderLives(); renderScore();
+  showScreen('game');
+  renderQuestion();
+}
+
+function exitLevel(){ openWorld(gWorld); }
+
+function renderLives(){
+  const row=document.getElementById('lives-row');
+  row.innerHTML=Array.from({length:3},(_,i)=>`<span class="life${i>=gLives?' lost':''}">❤️</span>`).join('');
+}
+function renderScore(){
+  document.getElementById('score-badge').textContent='⭐'+gScore;
+}
+
+/* ═══════════════════════════════════════════
+   QUESTION RENDERING
+═══════════════════════════════════════════ */
+const QTITLES={mc_rule:'WHICH RULE?',mc_step:'NEXT STEP?',hand_count:'HAND COUNT',abacus:'ABACUS CHALLENGE',speed:'SPEED ROUND'};
+
+function renderQuestion(){
+  const lvl=LEVELS[gWorld][gLvlIdx];
+  const q=lvl.questions[gQIdx];
+  gAnswered=false;
+
+  // Progress
+  const pct=((gQIdx)/lvl.questions.length)*100;
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-label').textContent='Q '+(gQIdx+1)+' / '+lvl.questions.length;
+
+  // Type label
+  document.getElementById('qc-type').textContent=(QTITLES[q.type]||q.type)+' — Q'+(gQIdx+1);
+
+  // Problem text
+  document.getElementById('qc-problem').innerHTML=q.problem.replace(/(\d+)/g,'<span class="num">$1</span>');
+
+  // Content
+  const content=document.getElementById('qc-content');
+  content.innerHTML='';
+
+  if(q.type==='mc_rule'||q.type==='mc_step'){
+    renderMC(content,q);
+  } else if(q.type==='hand_count'){
+    renderHandCount(content,q);
+  } else if(q.type==='abacus'){
+    renderAbacusQ(content,q);
+  } else if(q.type==='speed'){
+    renderSpeed(content,q);
+  }
+}
+
+/* ── MULTIPLE CHOICE ── */
+function renderMC(el,q){
+  const grid=document.createElement('div');
+  grid.className='mc-grid';
+  q.choices.forEach((c,i)=>{
+    const btn=document.createElement('button');
+    btn.className='mc-btn';
+    btn.style.color=WORLDS[gWorld].colorVal;
+    btn.innerHTML=c.replace(/(\d+)/g,'<span style="color:var(--gold)">$1</span>');
+    btn.onclick=()=>checkMC(i,q,btn,grid);
+    grid.appendChild(btn);
+  });
+  el.appendChild(grid);
+}
+function checkMC(chosen,q,btn,grid){
+  if(gAnswered)return;
+  gAnswered=true;
+  sfxClick();
+  const correct=chosen===q.ans;
+  btn.classList.add(correct?'correct':'wrong');
+  grid.querySelectorAll('.mc-btn')[q.ans].classList.add(correct?'correct':'reveal');
+  grid.querySelectorAll('.mc-btn').forEach(b=>b.disabled=true);
+  handleResult(correct,q.hint);
+}
+
+/* ── HAND COUNT ── */
+function renderHandCount(el,q){
+  const n=q.n, both=q.both||false;
+  const handCount=both?2:1;
+  const totalFingers=handCount*5;
+
+  const wrap=document.createElement('div');
+  wrap.style.textAlign='center';
+
+  // Animated fingers
+  const fingerRow=document.createElement('div');
+  fingerRow.className='finger-row';
+  fingerRow.id='finger-row';
+  const fingers=[];
+  for(let h=0;h<handCount;h++){
+    for(let f=0;f<5;f++){
+      const fi=document.createElement('div');
+      fi.className='finger';
+      fi.dataset.idx=h*5+f;
+      fi.textContent='👆';
+      fingers.push(fi);
+      fingerRow.appendChild(fi);
+    }
+  }
+  wrap.appendChild(fingerRow);
+
+  // Auto-close N fingers with animation
+  let closedCount=0;
+  const autoClose=()=>{
+    if(closedCount>=n) return;
+    fingers[closedCount].classList.add('closed');
+    fingers[closedCount].textContent='✊';
+    closedCount++;
+    setTimeout(autoClose,200);
+  };
+  setTimeout(autoClose,400);
+
+  const instr=document.createElement('div');
+  instr.className='hand-instruction';
+  instr.innerHTML=`${both?'Both hands':'One hand'} — closing <strong style="color:var(--gold)">${n}</strong> fingers. Count remaining open fingers:`;
+  wrap.appendChild(instr);
+
+  const countBtns=document.createElement('div');
+  countBtns.className='count-btns';
+  for(let v=0;v<=totalFingers;v++){
+    const b=document.createElement('button');
+    b.className='count-btn'; b.textContent=v;
+    b.onclick=()=>checkHandCount(v,q,b,countBtns);
+    countBtns.appendChild(b);
+  }
+  wrap.appendChild(countBtns);
+  el.appendChild(wrap);
+}
+function checkHandCount(v,q,btn,wrap){
+  if(gAnswered)return;
+  gAnswered=true;
+  sfxClick();
+  const correct=v===q.ans;
+  btn.classList.add(correct?'correct':'wrong');
+  wrap.querySelectorAll('.count-btn').forEach(b=>{
+    if(parseInt(b.textContent)===q.ans) b.classList.add('correct');
+    b.disabled=true;
+  });
+  handleResult(correct,q.hint);
+}
+
+/* ── ABACUS QUESTION ── */
+function renderAbacusQ(el,q){
+  if(q.cur!==undefined) setGNum(q.cur); else initGBeads();
+  const wrap=document.createElement('div');
+  wrap.className='abacus-wrap';
+
+  const valRow=document.createElement('div');
+  valRow.className='abacus-val';
+  valRow.innerHTML='<span class="label">ABACUS =</span><span id="g-aba-val">'+totalGVal()+'</span>';
+  wrap.appendChild(valRow);
+  wrap.appendChild(buildAbacusSVG());
+
+  const hint=document.createElement('div');
+  hint.style.cssText='font-size:.78rem;color:var(--dim);text-align:center;margin-top:4px';
+  hint.textContent='Click beads to set the answer, then click CHECK';
+  wrap.appendChild(hint);
+
+  const checkBtn=document.createElement('button');
+  checkBtn.className='aba-check-btn';
+  checkBtn.style.cssText='border-color:'+WORLDS[gWorld].colorVal+';color:'+WORLDS[gWorld].colorVal;
+  checkBtn.textContent='✅ CHECK ANSWER';
+  checkBtn.onclick=()=>checkAbacus(q);
+  wrap.appendChild(checkBtn);
+  el.appendChild(wrap);
+}
+
+const ROD_LABELS=['10K','1K','100','10','1'];
+function buildAbacusSVG(){
+  const frame=document.createElement('div');
+  frame.className='game-abacus';
+
+  // Labels
+  const lblRow=document.createElement('div');
+  lblRow.className='ga-labels';
+  lblRow.innerHTML='<div class="lbl-spc"></div>';
+  ROD_LABELS.forEach(l=>{
+    const d=document.createElement('div');d.className='ga-lbl';d.textContent=l;lblRow.appendChild(d);
+  });
+  frame.appendChild(lblRow);
+
+  // Heaven section
+  const heavenSec=document.createElement('div');
+  heavenSec.className='ga-heaven';
+  const hLbl=document.createElement('div');hLbl.className='ga-sec-lbl h';hLbl.textContent='×5';
+  heavenSec.appendChild(hLbl);
+  for(let r=0;r<RODS;r++){
+    const rod=document.createElement('div');rod.className='ga-rod';
+    const b=document.createElement('div');
+    b.className='ga-bead hb'+(gBeads[r].h?' on':'');
+    b.id='gb-h-'+r;
+    b.onclick=((ri)=>()=>toggleH(ri))(r);
+    rod.appendChild(b); heavenSec.appendChild(rod);
+  }
+  frame.appendChild(heavenSec);
+
+  // Earth section
+  const earthSec=document.createElement('div');
+  earthSec.className='ga-earth';
+  const eLbl=document.createElement('div');eLbl.className='ga-sec-lbl e';eLbl.textContent='×1';
+  const rowsWrap=document.createElement('div');
+  rowsWrap.style.flex='1';
+  const eRowEls=Array.from({length:4},()=>{
+    const d=document.createElement('div');d.className='ga-earth-row';rowsWrap.appendChild(d);return d;
+  });
+  for(let r=0;r<RODS;r++){
+    for(let e=0;e<4;e++){
+      const b=document.createElement('div');
+      b.className='ga-bead eb'+(gBeads[r].e[e]?' on':'');
+      b.id='gb-e-'+r+'-'+e;
+      b.onclick=((ri,ei)=>()=>toggleE(ri,ei))(r,e);
+      eRowEls[e].appendChild(b);
+    }
+  }
+  earthSec.appendChild(eLbl);
+  earthSec.appendChild(rowsWrap);
+  frame.appendChild(earthSec);
+  return frame;
+}
+
+function toggleH(r){
+  sfxClick();
+  gBeads[r].h=!gBeads[r].h;
+  const b=document.getElementById('gb-h-'+r);
+  if(b) b.className='ga-bead hb'+(gBeads[r].h?' on':'');
+  const vEl=document.getElementById('g-aba-val');
+  if(vEl) vEl.textContent=totalGVal();
+}
+function toggleE(r,e){
+  sfxClick();
+  gBeads[r].e[e]=!gBeads[r].e[e];
+  const b=document.getElementById('gb-e-'+r+'-'+e);
+  if(b) b.className='ga-bead eb'+(gBeads[r].e[e]?' on':'');
+  const vEl=document.getElementById('g-aba-val');
+  if(vEl) vEl.textContent=totalGVal();
+}
+
+function checkAbacus(q){
+  if(gAnswered)return;
+  gAnswered=true;
+  const got=totalGVal();
+  const correct=got===q.ans;
+  handleResult(correct, correct?'Perfect! '+q.ans+' is correct!':q.hint+' (Answer: '+q.ans+')');
+}
+
+/* ── SPEED INPUT ── */
+let speedTimerEl=null;
+function renderSpeed(el,q){
+  const wrap=document.createElement('div');
+  wrap.style.textAlign='center';
+  const sw=document.createElement('div');
+  sw.className='speed-wrap';
+  const inp=document.createElement('input');
+  inp.className='speed-input'; inp.type='number'; inp.id='speed-input';
+  inp.placeholder='?'; inp.autocomplete='off';
+  inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')submitSpeed(q,inp);});
+  const btn=document.createElement('button');
+  btn.className='speed-submit'; btn.textContent='GO!';
+  btn.onclick=()=>submitSpeed(q,inp);
+  sw.appendChild(inp); sw.appendChild(btn);
+  wrap.appendChild(sw);
+  el.appendChild(wrap);
+  setTimeout(()=>inp.focus(),100);
+}
+function submitSpeed(q,inp){
+  if(gAnswered)return;
+  const got=parseInt(inp.value);
+  if(isNaN(got))return;
+  gAnswered=true;
+  const correct=got===q.ans;
+  handleResult(correct, correct?'Correct! '+got+' ✓':q.hint+' (Answer: '+q.ans+')');
+}
+
+/* ═══════════════════════════════════════════
+   RESULT HANDLING
+═══════════════════════════════════════════ */
+function handleResult(correct, hint){
+  const overlay=document.getElementById('feedback-overlay');
+  overlay.innerHTML='';
+
+  if(correct){
+    sfxCorrect(); gCombo++; gCorrect++;
+    const pts=10*(1+Math.floor(gCombo/3));
+    gScore+=pts;
+    if(gCombo>=3){ sfxCombo(); showCombo(gCombo+'x COMBO! +'+pts); }
+    spawnParticles(true);
+    const banner=Object.assign(document.createElement('div'),{className:'feedback-banner correct'});
+    banner.innerHTML='✅ CORRECT!<br><span style="font-size:0.5em">+'+pts+' pts</span>';
+    overlay.appendChild(banner);
+  } else {
+    sfxWrong(); gCombo=0; gLives--;
+    renderLives();
+    flashScreen('rgba(255,51,102,0.1)');
+    const banner=Object.assign(document.createElement('div'),{className:'feedback-banner wrong'});
+    banner.textContent='❌ NOT QUITE!';
+    overlay.appendChild(banner);
+  }
+
+  const hintDiv=Object.assign(document.createElement('div'),{className:'feedback-hint'});
+  hintDiv.textContent='💡 '+hint;
+  overlay.appendChild(hintDiv);
+  renderScore();
+
+  const nextBtn=Object.assign(document.createElement('button'),{className:'next-btn'});
+  nextBtn.textContent= gLives<=0?'💀 GAME OVER →':
+    gQIdx>=LEVELS[gWorld][gLvlIdx].questions.length-1?'🏆 FINISH →':'NEXT QUESTION ▶';
+  nextBtn.onclick=()=>{ overlay.classList.remove('show'); overlay.innerHTML=''; nextQuestion(); };
+  overlay.appendChild(nextBtn);
+  overlay.classList.add('show');
+}
+
+function nextQuestion(){
+  if(gLives<=0){ showComplete(false); return; }
+  gQIdx++;
+  if(gQIdx>=LEVELS[gWorld][gLvlIdx].questions.length){ showComplete(true); return; }
+  renderQuestion();
+}
+
+/* ═══════════════════════════════════════════
+   LEVEL COMPLETE
+═══════════════════════════════════════════ */
+function showComplete(finished){
+  const total=LEVELS[gWorld][gLvlIdx].questions.length;
+  const pct=gCorrect/total;
+  const stars=finished?(pct>=0.8?3:pct>=0.6?2:1):0;
+  setStars(gWorld,LEVELS[gWorld][gLvlIdx].id,stars);
+
+  const W=WORLDS[gWorld];
+  const starsEl=document.getElementById('complete-stars');
+  starsEl.innerHTML=Array.from({length:3},(_,i)=>`
+    <span class="complete-star ${i<stars?'lit':'unlit'}" 
+      style="animation-delay:${i*.15+.2}s">⭐</span>`).join('');
+
+  document.getElementById('complete-title').textContent=
+    finished?(stars===3?'🏆 PERFECT!':stars===2?'🎉 GREAT!':stars===1?'👍 LEVEL CLEAR!':'✅ DONE!'):'💀 GAME OVER';
+  document.getElementById('complete-title').style.color=
+    stars===3?'var(--gold)':stars>=2?W.colorVal:'var(--sub)';
+
+  document.getElementById('complete-score').textContent='Score: '+gScore+' pts';
+
+  const summary=document.getElementById('complete-summary');
+  summary.innerHTML=`
+    <div class="cs-row"><span class="cs-label">Correct Answers</span><span class="cs-val" style="color:var(--add)">${gCorrect} / ${total}</span></div>
+    <div class="cs-row"><span class="cs-label">Stars Earned</span><span class="cs-val">${renderStars(stars,3)}</span></div>
+    <div class="cs-row"><span class="cs-label">Best Combo</span><span class="cs-val" style="color:var(--gold)">${gCombo}x</span></div>
+    <div class="cs-row"><span class="cs-label">Rule</span><span class="cs-val" style="color:${W.colorVal}">${LEVELS[gWorld][gLvlIdx].id}</span></div>
+  `;
+
+  const btns=document.getElementById('complete-btns');
+  btns.innerHTML='';
+  const retry=document.createElement('button');
+  retry.className='complete-btn';
+  retry.style.cssText=`border-color:${W.colorVal};color:${W.colorVal}`;
+  retry.textContent='🔄 RETRY';
+  retry.onclick=()=>{openDemo(gWorld,gLvlIdx);};
+  btns.appendChild(retry);
+
+  if(gLvlIdx<LEVELS[gWorld].length-1&&finished&&stars>=1){
+    const next=document.createElement('button');
+    next.className='complete-btn';
+    next.style.cssText=`border-color:var(--gold);color:var(--gold)`;
+    next.textContent='▶ NEXT LEVEL';
+    next.onclick=()=>openDemo(gWorld,gLvlIdx+1);
+    btns.appendChild(next);
+  }
+  const map=document.createElement('button');
+  map.className='complete-btn';
+  map.style.cssText='border-color:var(--dim);color:var(--dim)';
+  map.textContent='🗺 WORLD MAP';
+  map.onclick=()=>openWorld(gWorld);
+  btns.appendChild(map);
+
+  showScreen('complete');
+  if(stars===3) setTimeout(()=>{spawnParticles(true,80);},200);
+}
+
+/* ═══════════════════════════════════════════
+   VISUAL FX
+═══════════════════════════════════════════ */
+function spawnParticles(good,count=40){
+  const colors=good?['#00ff88','#ffd700','#33aaff','#ffcc00','#ffffff']:['#ff3366','#ff6699'];
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const dx=(Math.random()-.5)*400+'px';
+    const dy=-(100+Math.random()*300)+'px';
+    p.style.cssText=`
+      left:${40+Math.random()*20}vw;top:40vh;
+      width:${5+Math.random()*9}px;height:${5+Math.random()*9}px;
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --dx:${dx};--dy:${dy};
+      animation-duration:${.8+Math.random()*.9}s;
+      animation-delay:${Math.random()*.2}s;
+    `;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(),2000);
+  }
+}
+
+function showCombo(txt){
+  const el=document.createElement('div');
+  el.className='combo-badge';
+  el.textContent=txt;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),800);
+}
+
+function flashScreen(color){
+  const fl=document.createElement('div');
+  fl.style.cssText=`position:fixed;inset:0;background:${color};z-index:50;pointer-events:none;animation:flashOut .3s ease forwards`;
+  const style=document.createElement('style');
+  style.textContent='@keyframes flashOut{to{opacity:0}}';
+  document.head.appendChild(style);
+  document.body.appendChild(fl);
+  setTimeout(()=>fl.remove(),400);
+}
+
+/* ═══════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════ */
+refreshTitle();
+</script>
+</body>
+</html>
